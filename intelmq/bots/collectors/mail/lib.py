@@ -42,21 +42,21 @@ class MailCollectorBot(CollectorBot):
 
         if emails:
             for uid, message in emails:
+                if hasattr(message,"subject"):
+                    if (self.parameters.subject_regex and
+                            not re.search(self.parameters.subject_regex,
+                                          re.sub(r"\r\n\s", " ", message.subject))):
+                        self.logger.debug("Message with date %s skipped because subject %r does not match.",
+                                          message.date, message.subject)
+                        continue
 
-                if (self.parameters.subject_regex and
-                        not re.search(self.parameters.subject_regex,
-                                      re.sub(r"\r\n\s", " ", message.subject))):
-                    self.logger.debug("Message with date %s skipped because subject %r does not match.",
-                                      message.date, message.subject)
-                    continue
-
-                if self.process_message(uid, message):
-                    try:
-                        mailbox.mark_seen(uid)
-                    except imaplib.abort:
-                        # Disconnect, see https://github.com/certtools/intelmq/issues/852
-                        mailbox = self.connect_mailbox()
-                        mailbox.mark_seen(uid)
+                    if self.process_message(uid, message):
+                        try:
+                            mailbox.mark_seen(uid)
+                        except imaplib.abort:
+                            # Disconnect, see https://github.com/certtools/intelmq/issues/852
+                            mailbox = self.connect_mailbox()
+                            mailbox.mark_seen(uid)
         else:
             self.logger.debug("No unread mails to check.")
         mailbox.logout()
